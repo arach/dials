@@ -21,12 +21,12 @@ Clone (or drop the sources in a folder) and let SwiftPM do the rest:
 swift build
 
 # run the CLI
-a./swift run dials --help
+swift run dials --help
 
 # examples
 swift run dials balance --left      # hard-pan left
 swift run dials balance --center    # centre
-swift run dials balance -v 0.5      # 50 % right
+swift run dials balance --right     # right
 
 swift run dials output list         # list output-capable devices
 ```
