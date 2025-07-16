@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(swift build)",
+      "Bash(./.build/debug/dials:*)",
+      "Bash(chmod:*)",
+      "Bash(make:*)",
+      "Bash(.build/debug/dials balance:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

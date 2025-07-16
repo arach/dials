@@ -9,7 +9,10 @@ struct DialsCLI: ParsableCommand {
         version: "0.1.0",
         subcommands: [
             Balance.self,
-            Output.self
+            Output.self,
+            Display.self,
+            CommandCenter.self,
+            Build.self
         ],
         defaultSubcommand: Balance.self
     )

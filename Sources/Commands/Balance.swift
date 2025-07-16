@@ -16,14 +16,23 @@ struct Balance: ParsableCommand {
     var right: Bool = false
 
     func run() throws {
-        let val: Float = {
-            if left   { return 0.0 }
-            if center { return 0.5 }
-            if right  { return 1.0 }
-            if let v = value { return min(max(v, 0.0), 1.0) }
-            return 0
-        }()
-
-        try AudioController.setBalance(val)
+        // Use the Dials SDK to handle the balance operation
+        let result: String
+        
+        if let v = value {
+            let clampedValue = min(max(v, 0.0), 1.0)
+            result = try Dials.Audio.setBalance(clampedValue)
+        } else if left {
+            result = try Dials.Audio.balanceLeft()
+        } else if right {
+            result = try Dials.Audio.balanceRight()
+        } else if center {
+            result = try Dials.Audio.balanceCenter()
+        } else {
+            // Default to center
+            result = try Dials.Audio.balanceCenter()
+        }
+        
+        print(result)
     }
 } 

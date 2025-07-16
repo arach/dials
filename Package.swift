@@ -10,7 +10,7 @@ let package = Package(
         .executable(name: "dials", targets: ["dials"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.0")
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0")
     ],
     targets: [
         .executableTarget(
@@ -21,7 +21,11 @@ let package = Package(
             path: "Sources",
             linkerSettings: [
                 .linkedFramework("CoreAudio"),
-                .linkedFramework("AudioToolbox")
+                .linkedFramework("AudioToolbox"),
+                .linkedFramework("CoreGraphics"),
+                .linkedFramework("ApplicationServices"),
+                .linkedFramework("SwiftUI"),
+                .linkedFramework("AppKit")
             ]
         )
     ]
