@@ -1,117 +1,246 @@
 # Dials
 
-Local-first, cockpit-style controller for macOS system settings.  
-First dial implemented: **audio balance**. Quickly pan the default output device hard-left/right or anywhere in between, list available output devices, and pave the way for future controls like AirPlay routing, display modes, and preset profiles.
+**Version 0.2.0** - A cockpit-style controller for macOS system settings.
+
+Dials provides intuitive control over macOS media I/O with both a powerful menu bar app and command-line interface. Control audio balance, manage displays, fix AirPlay issues, and more - all from your menu bar or terminal.
+
+## Features
+
+### 🎵 Audio Control
+- **Precise Balance Control** - Pan audio left, right, or center with visual feedback
+- **Device Management** - List and inspect all audio output devices
+- **Real-time Updates** - Instant changes with notification feedback
+
+### 📱 Multiple Interfaces
+- **Menu Bar App** - Always-available status bar icon with quick controls
+- **Command Center** - Beautiful SwiftUI interface with system commands
+- **CLI Tool** - Full terminal interface for scripting and power users
+- **App Intents** - Siri and Shortcuts integration
+
+### 🚀 Quick Access
+- **Global Hotkey** - Hyper+D (Shift+Option+Control+Command+D) for instant access
+- **Launcher Integration** - Works with Raycast, Alfred, Hyper-D, and more
+- **Menu Bar Quick Actions** - Balance controls right from the status bar
+
+### 🛠 System Utilities
+- **AirPlay Fixes** - Reset stuck mirroring and force-stop AirPlay processes
+- **Display Management** - List displays and control external monitors
+- **Smart Notifications** - Contextual feedback with auto-dismiss
 
 ---
 
-## Requirements
+## Installation
 
-* macOS 13 or later (for `kAudioObjectPropertyElementMain` constants)
-* Swift 5.10 toolchain (comes with Xcode 15.3 or newer) – Swift Package Manager is used for builds.
-
----
-
-## Build & Run
-
-Clone (or drop the sources in a folder) and let SwiftPM do the rest:
-
+### Quick Install (Recommended)
 ```bash
-# build in debug (default)
-swift build
+# Clone the repository
+git clone https://github.com/arach/dials.git
+cd dials
 
-# run the CLI
-swift run dials --help
+# Build and install the app to /Applications
+make install-app
 
-# examples
-swift run dials balance --left      # hard-pan left
-swift run dials balance --center    # centre
-swift run dials balance --right     # right
-
-swift run dials output list         # list output-capable devices
+# Optionally install CLI to /usr/local/bin
+make install
 ```
 
-For the fastest binary, add the release flag:
-
+### Manual Build
 ```bash
+# Build app bundle
+make app
+
+# Or use Swift directly
 swift build -c release
-.build/release/dials --version
 ```
 
 ---
 
-## Project layout & architecture
+## Usage
+
+### Menu Bar App
+1. Launch Dials from Applications or run `open /Applications/Dials.app`
+2. Look for the "◉" icon in your menu bar
+3. Click for quick controls or use **Hyper+D** for the Command Center
+
+### Command Line
+```bash
+# Audio balance controls
+dials balance --left        # Pan to left speaker
+dials balance --center      # Center balance
+dials balance --right       # Pan to right speaker
+dials balance               # Show current balance dial
+
+# Device information
+dials output list           # List all audio devices
+dials output info           # Default device details
+
+# Display management
+dials display list          # List connected displays
+dials display off 0x1       # Turn off specific display
+
+# System fixes
+dials fixes reset-airplay   # Reset AirPlay mirroring
+dials fixes force-stop      # Force stop AirPlay processes
+
+# Launcher integration
+dials show                  # Show Command Center window
+```
+
+### Siri & Shortcuts
+After installing the app, you can use:
+- "Hey Siri, balance audio with Dials"
+- "Hey Siri, balance left with Dials"
+- "Hey Siri, set audio balance to 75 percent with Dials"
+
+---
+
+## Launcher Integration
+
+### Raycast
+1. Create a Script Command with: `dials show`
+2. Set keyword to "dials"
+3. Or use the provided script in `raycast/set-audio-balance.sh`
+
+### Alfred
+1. Create a Workflow with keyword trigger
+2. Connect to Run Script action: `/usr/local/bin/dials show`
+
+### Hyper-D
+Add `dials show` to your Hyper-D configuration.
+
+---
+
+## Development
+
+### Build System
+The comprehensive Makefile provides all development commands:
+
+```bash
+# Development
+make build          # Debug build (default)
+make dev           # Auto-rebuilding file watcher
+make watch         # Watch files for changes
+
+# Distribution
+make app           # Create app bundle
+make dmg           # Create DMG installer
+make install-app   # Install to /Applications
+make install       # Install CLI to /usr/local/bin
+
+# Quick commands (with auto-build)
+make command-center    # Launch menu bar app
+make balance-left      # Pan audio left
+make list-outputs      # Show audio devices
+make help             # Show all commands
+```
+
+### Requirements
+- **macOS 13+** (for modern CoreAudio constants)
+- **Swift 5.10+** (Xcode 15.3+)
+- **Swift Package Manager** (included with Xcode)
+
+### Architecture
+
+Dials uses a clean, modular architecture:
 
 ```
 Dials/
-├── Package.swift        ← SwiftPM manifest (dependencies & linker flags)
-├── README.md            ← you are here
-└── Sources/
-    ├── main.swift       ← Root command that wires sub-commands together
-    ├── AudioController.swift  ← Thin CoreAudio wrapper
-    └── Commands/
-        ├── Balance.swift ← `dials balance` implementation
-        └── Output.swift  ← `dials output list` implementation
+├── Sources/
+│   ├── main.swift                  ← CLI entry point
+│   ├── Commands/                   ← CLI commands
+│   │   ├── Balance.swift           ← Audio balance control
+│   │   ├── CommandCenter.swift     ← Menu bar app
+│   │   ├── Show.swift              ← Launcher integration
+│   │   └── ...
+│   ├── Services/                   ← Core functionality
+│   │   ├── Dials.swift             ← Main SDK
+│   │   ├── AudioService.swift      ← Audio control
+│   │   ├── DisplayService.swift    ← Display management
+│   │   └── ...
+│   ├── Intents/                    ← App Intents (Siri)
+│   └── Views/                      ← SwiftUI components
+├── scripts/                        ← Build and distribution
+└── Documentation/
+    ├── APP_INTENTS.md              ← Siri integration guide
+    ├── LAUNCHER_SETUP.md           ← Launcher configuration
+    └── CLAUDE.md                   ← Development guide
 ```
 
-### 1. Swift ArgumentParser
+**Key Design Principles:**
+- **SDK-Centric** - All functionality accessed through `Dials` SDK
+- **Dual Interface** - Same features available in CLI and GUI
+- **Modular Commands** - Each feature is an independent `ParsableCommand`
+- **Service Layer** - Clean separation of system interactions
 
-We rely on [swift-argument-parser](https://github.com/apple/swift-argument-parser) for ergonomic CLI parsing.
-Each feature lives in its own `ParsableCommand` under `Sources/Commands/` so adding a new dial is as simple as:
+---
 
-```swift
-struct AirPlay: ParsableCommand { /* … */ }
-```
+## Technical Details
 
-and registering it in `main.swift`:
+### Audio Control
+- Uses modern CoreAudio APIs with `kAudioObjectPropertyElementMain`
+- Precise stereo pan control (0.0 = left, 0.5 = center, 1.0 = right)
+- Device enumeration and detailed property inspection
+- Real-time balance reading with visual dial display
 
-```swift
-subcommands: [Balance.self, Output.self, AirPlay.self]
-```
+### Menu Bar App
+- Background process with no dock icon (`LSUIElement`)
+- Global hotkey monitoring with proper cleanup
+- Dynamic activation policy for window presentation
+- Custom notification system with auto-dismiss
 
-### 2. AudioController
-
-`AudioController` wraps the messy CoreAudio C APIs and exposes:
-
-* `setBalance(Float)` – converts a pan value (−1…1) into per-channel scalar volumes and writes them with `AudioObjectSetPropertyData`.
-* `allOutputDevices()` – enumerates devices via `kAudioHardwarePropertyDevices` and filters those with output channels using `UnsafeMutableAudioBufferListPointer`.
-* `defaultOutputDeviceID` – helper to fetch the current default sink.
-
-Only the modern `kAudioObjectPropertyElementMain` constant is used, so we avoid deprecation warnings on macOS 12+.
-
-### 3. Extensibility
-
-Because every dial is an independent `ParsableCommand`, future features can plug in without touching existing code. Possible next steps:
-
-* AirPlay / output routing (`dials route`)
-* Display & projector presets (`dials display night-mode`)
-* Profile files stored under `~/Library/Application Support/Dials/Presets`
+### App Intents Integration
+- Native iOS/macOS shortcuts support
+- Parameterized intents for custom balance values
+- Voice control through Siri
+- Spotlight integration
 
 ---
 
 ## Roadmap
 
-* [ ] `--device <id>` option to target non-default outputs
-* [ ] Saving / loading presets
-* [ ] SwiftUI menu-bar companion app
+### Current (v0.2.0)
+- ✅ Menu bar app with Command Center UI
+- ✅ App Intents for Siri/Shortcuts
+- ✅ Global hotkey (Hyper+D)
+- ✅ Launcher integration
+- ✅ System fixes for AirPlay issues
+- ✅ Visual balance dial display
+- ✅ DMG distribution
 
-Contributions & bug-reports welcome – open an issue or PR.
+### Next Release (v0.3.0)
+- [ ] Audio device switching and routing
+- [ ] Preset profiles and quick-switch
+- [ ] Display brightness and color temperature
+- [ ] Enhanced AirPlay management
+- [ ] Notification customization
 
-# Raycast Integration
+### Future
+- [ ] Plugin system for third-party dials
+- [ ] Touch Bar integration
+- [ ] Stream Deck support
+- [ ] Web interface for remote control
 
-A ready-to-use Raycast script command is provided in the `raycast/` directory:
+---
 
-```
-raycast/set-audio-balance.sh
-```
+## Contributing
 
-This script lets you set the system audio balance (left, center, right) from Raycast using your `dials` CLI.
+Contributions welcome! The modular architecture makes it easy to add new features:
 
-## Usage
-1. Build and install the `dials` binary as described above (make sure it's in `/usr/local/bin` or your `$PATH`).
-2. Copy or symlink `raycast/set-audio-balance.sh` to your Raycast Script Commands directory (usually `~/Raycast/Scripts/`)
-3. [Make sure your ~/Raycast/Scripts/ is added in Extensions](https://github.com/raycast/script-commands?tab=readme-ov-file#install-script-commands-from-this-repository).
-4. In Raycast `Reload Script Directories`
-3. In Raycast, search for "Set Audio Balance" and enter `left`, `center`, or `right` as the argument.
+1. **New Commands** - Add `ParsableCommand` in `Sources/Commands/`
+2. **Services** - Extend functionality in `Sources/Services/`
+3. **UI Components** - Add SwiftUI views in `Sources/Views/`
+4. **Documentation** - Update relevant `.md` files
 
-The script will call your CLI and show the result in Raycast. 
+See [CLAUDE.md](CLAUDE.md) for detailed development guidance.
+
+---
+
+## License
+
+MIT License - see LICENSE file for details.
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/arach/dials/issues)
+- **Documentation**: See `APP_INTENTS.md` and `LAUNCHER_SETUP.md`
+- **Development**: See `CLAUDE.md` for comprehensive development guide
