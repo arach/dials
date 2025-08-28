@@ -1,5 +1,6 @@
 import Foundation
 import CoreAudio
+import AppKit
 
 /// Shared audio service that provides high-level operations for both CLI and UI
 enum AudioService {
@@ -7,8 +8,11 @@ enum AudioService {
     // MARK: - Device Information
     
     static func listOutputDevices() throws -> String {
+        print("[AudioService] Listing output devices...")
         let devices = try AudioController.allOutputDevices()
         let defaultID = AudioController.defaultOutputDeviceID
+        
+        print("[AudioService] Found \(devices.count) devices, default ID: \(defaultID)")
         
         var output = "Audio Output Devices:\n\n"
         for device in devices {
@@ -16,6 +20,8 @@ enum AudioService {
             let prefix = isDefault ? "* " : "  "
             output += "\(prefix)\(device.name) (ID: \(device.id))\n"
         }
+        
+        print("[AudioService] Output: \(output)")
         return output
     }
     
@@ -53,7 +59,21 @@ enum AudioService {
     
     static func setBalance(_ value: Float) throws -> String {
         try AudioController.setBalance(value)
-        return formatBalanceResult(value)
+        let result = formatBalanceResult(value)
+        
+        // Only show notification if we're running as a GUI app (not CLI)
+        if NSApp != nil && NSApp.activationPolicy() != .prohibited {
+            DispatchQueue.main.async {
+                showNotification(
+                    type: .success,
+                    title: "Balance Updated",
+                    message: result,
+                    autoDismissAfter: 2.0
+                )
+            }
+        }
+        
+        return result
     }
     
     static func setBalanceLeft() throws -> String {
@@ -66,6 +86,49 @@ enum AudioService {
     
     static func setBalanceRight() throws -> String {
         return try setBalance(1.0)
+    }
+    
+    static func getCurrentBalance() throws -> String {
+        let balance = try AudioController.getBalance()
+        
+        // Create a visual dial representation
+        let dialPositions = ["⬤○○", "○⬤○", "○○⬤"] // Left, Center, Right
+        let labelPositions = ["LEFT", "CENTER", "RIGHT"]
+        
+        var output = "\n"
+        
+        // Determine position
+        let position: Int
+        let label: String
+        
+        if balance < 0.25 {
+            position = 0
+            label = labelPositions[0]
+        } else if balance > 0.75 {
+            position = 2
+            label = labelPositions[2]
+        } else {
+            position = 1
+            label = labelPositions[1]
+        }
+        
+        // Create visual dial
+        output += "  Audio Balance Dial\n"
+        output += "  ╭─────────────╮\n"
+        output += "  │  " + dialPositions[position] + "  │\n"
+        output += "  │   " + label + "   │\n"
+        output += "  ╰─────────────╯\n"
+        output += "\n"
+        
+        // Add detailed info
+        output += formatBalance(balance) + "\n"
+        
+        if balance != 0.0 && balance != 0.5 && balance != 1.0 {
+            // Show exact value if not at a preset position
+            output += "Exact value: \(String(format: "%.0f%%", balance * 100))\n"
+        }
+        
+        return output
     }
     
     // MARK: - Private Helpers

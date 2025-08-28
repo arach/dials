@@ -13,10 +13,9 @@ struct Display: ParsableCommand {
     // dials display list
     struct List: ParsableCommand {
         func run() {
-            printAllIOKitDisplays()
-            for screen in DisplayManager.all() {
-                printDisplayInfo(screen.id)
-            }
+            // Use the Dials SDK for consistent output
+            let output = Dials.Display.list()
+            print(output)
         }
     }
 
@@ -26,18 +25,18 @@ struct Display: ParsableCommand {
         @Flag(name: .customLong("ddc"), help: "Also send DDC power-off") var useDDC = false
 
         func run() throws {
-            guard let did = UInt32(id, radix: 16) else {
-                throw ValidationError("Invalid display ID.")
-            }
-            try DisplayManager.deactivate(did)
-            if useDDC { _ = DisplayManager.ddcPowerOff(did) }
+            // Use the Dials SDK
+            let result = Dials.Display.turnOff(id: id, useDDC: useDDC)
+            print(result)
         }
     }
 
     // dials display iokit
     struct Iokit: ParsableCommand {
         func run() {
-            printAllIOKitDisplays()
+            // Use the Dials SDK
+            let output = Dials.Display.ioKitInfo()
+            print(output)
         }
     }
 }

@@ -55,6 +55,36 @@ enum AudioController {
         return id
     }
 
+    static func getBalance() throws -> Float {
+        let devID = defaultOutputDeviceID
+        var balance: Float = 0.5 // Default to center
+        
+        // First try stereo pan
+        var stereoPanAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyStereoPan,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain)
+        var stereoPanSize = UInt32(MemoryLayout.size(ofValue: balance))
+        
+        if AudioObjectHasProperty(devID, &stereoPanAddr) {
+            AudioObjectGetPropertyData(devID, &stereoPanAddr, 0, nil, &stereoPanSize, &balance)
+            return balance
+        }
+        
+        // Fall back to virtual balance
+        var balAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwareServiceDeviceProperty_VirtualMainBalance,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain)
+        var balSize = UInt32(MemoryLayout.size(ofValue: balance))
+        
+        if AudioObjectHasProperty(devID, &balAddr) {
+            AudioObjectGetPropertyData(devID, &balAddr, 0, nil, &balSize, &balance)
+        }
+        
+        return balance
+    }
+    
     static func setBalance(_ balance: Float) throws {
         let devID = defaultOutputDeviceID
         
@@ -229,14 +259,27 @@ enum AudioController {
         let leftVolume = (try? getVolume(deviceID: id, channel: 1)) ?? 0
         let rightVolume = (try? getVolume(deviceID: id, channel: 2)) ?? 0
 
-        // Balance
-        var bal: Float = 0
-        var balAddr = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwareServiceDeviceProperty_VirtualMainBalance,
+        // Balance - try stereo pan first (since that's what we use for setting)
+        var bal: Float = 0.5 // Default to center
+        
+        // First try stereo pan
+        var stereoPanAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyStereoPan,
             mScope: kAudioDevicePropertyScopeOutput,
             mElement: kAudioObjectPropertyElementMain)
-        var balSize = UInt32(MemoryLayout.size(ofValue: bal))
-        AudioObjectGetPropertyData(id, &balAddr, 0, nil, &balSize, &bal)
+        var stereoPanSize = UInt32(MemoryLayout.size(ofValue: bal))
+        
+        if AudioObjectHasProperty(id, &stereoPanAddr) {
+            AudioObjectGetPropertyData(id, &stereoPanAddr, 0, nil, &stereoPanSize, &bal)
+        } else {
+            // Fall back to virtual balance
+            var balAddr = AudioObjectPropertyAddress(
+                mSelector: kAudioHardwareServiceDeviceProperty_VirtualMainBalance,
+                mScope: kAudioDevicePropertyScopeOutput,
+                mElement: kAudioObjectPropertyElementMain)
+            var balSize = UInt32(MemoryLayout.size(ofValue: bal))
+            AudioObjectGetPropertyData(id, &balAddr, 0, nil, &balSize, &bal)
+        }
 
         // Muted
         var muted: UInt32 = 0

@@ -4,7 +4,7 @@
 # Project Configuration
 APP_NAME = Dials
 BINARY_NAME = dials
-VERSION = 0.1.0
+VERSION = 0.2.0
 BUNDLE_ID = com.arach.dials
 
 # Build Configuration
@@ -44,7 +44,7 @@ else
 endif
 
 .PHONY: all build debug release clean install uninstall test help info
-.PHONY: app bundle dev watch run-dev run-app 
+.PHONY: app bundle dev watch run-dev run-app dmg dist
 .PHONY: command-center balance-left balance-center balance-right
 .PHONY: list-outputs list-displays
 
@@ -124,8 +124,29 @@ create-info-plist:
 	@echo '	<string>Dials needs access to audio devices to control balance and output settings.</string>' >> $(CONTENTS_DIR)/Info.plist
 	@echo '	<key>NSSystemAdministrationUsageDescription</key>' >> $(CONTENTS_DIR)/Info.plist
 	@echo '	<string>Dials needs administrator privileges to control system audio settings.</string>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '	<key>NSAppleEventsUsageDescription</key>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '	<string>Dials needs accessibility access to register global keyboard shortcuts.</string>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '	<key>INIntentsSupported</key>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '	<array>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '		<string>SetBalanceIntent</string>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '		<string>BalanceLeftIntent</string>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '		<string>BalanceCenterIntent</string>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '		<string>BalanceRightIntent</string>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '		<string>GetBalanceIntent</string>' >> $(CONTENTS_DIR)/Info.plist
+	@echo '	</array>' >> $(CONTENTS_DIR)/Info.plist
 	@echo '</dict>' >> $(CONTENTS_DIR)/Info.plist
 	@echo '</plist>' >> $(CONTENTS_DIR)/Info.plist
+
+# === DISTRIBUTION TARGETS ===
+
+# Create DMG installer
+dmg: app
+	@echo "$(BLUE)📦 Creating DMG installer...$(NC)"
+	@./scripts/create-dmg.sh
+	@echo "$(GREEN)✅ DMG installer created$(NC)"
+
+# Create distribution package (alias for dmg)
+dist: dmg
 
 # === DEVELOPMENT TARGETS ===
 
@@ -255,6 +276,11 @@ command-center: debug
 # Launch menu bar app (alias)
 menubar: command-center
 
+# Show command center window (for launchers)
+show: debug
+	@echo "$(GREEN)🚀 Showing Dials Command Center...$(NC)"
+	@$(DEBUG_BINARY) show
+
 # Audio balance controls
 balance-left: debug
 	@$(DEBUG_BINARY) balance --left
@@ -284,6 +310,8 @@ help:
 	@echo "  make release       - Build release version"
 	@echo "  make universal     - Build universal binary"
 	@echo "  make app           - Create app bundle"
+	@echo "  make dmg           - Create DMG installer"
+	@echo "  make dist          - Create distribution package (alias for dmg)"
 	@echo "  make clean         - Clean build artifacts"
 	@echo ""
 	@echo "$(YELLOW)Development:$(NC)"

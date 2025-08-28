@@ -25,7 +25,8 @@ let package = Package(
                 .linkedFramework("CoreGraphics"),
                 .linkedFramework("ApplicationServices"),
                 .linkedFramework("SwiftUI"),
-                .linkedFramework("AppKit")
+                .linkedFramework("AppKit"),
+                .linkedFramework("AppIntents")
             ]
         )
     ]

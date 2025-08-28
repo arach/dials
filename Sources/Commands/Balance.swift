@@ -29,8 +29,8 @@ struct Balance: ParsableCommand {
         } else if center {
             result = try Dials.Audio.balanceCenter()
         } else {
-            // Default to center
-            result = try Dials.Audio.balanceCenter()
+            // No arguments - show current balance like a dial
+            result = try Dials.Audio.getCurrentBalance()
         }
         
         print(result)

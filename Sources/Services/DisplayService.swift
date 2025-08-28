@@ -7,8 +7,9 @@ enum DisplayService {
     // MARK: - Display Information
     
     static func listDisplays() -> String {
+        print("[DisplayService] Listing displays...")
         let screens = DisplayManager.all()
-        let displayList = CGGetOnlineDisplayList(10, nil, nil)
+        print("[DisplayService] Found \(screens.count) displays")
         
         var output = "Connected Displays:\n\n"
         

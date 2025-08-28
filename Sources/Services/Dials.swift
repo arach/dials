@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// The main Dials SDK that provides access to all system control functionality
 /// This is the central API that both CLI and UI use
@@ -22,6 +23,11 @@ public enum Dials {
         
         public static func balanceRight() throws -> String {
             return try AudioService.setBalanceRight()
+        }
+        
+        /// Get the current balance position (like reading a dial)
+        public static func getCurrentBalance() throws -> String {
+            return try AudioService.getCurrentBalance()
         }
         
         /// Get list of all audio output devices
@@ -83,6 +89,7 @@ public enum Dials {
         
         private static func executeSystemCommands(_ commands: [(String, [String], Bool)], description: String) async -> String {
             var output = description + "\n\n"
+            var allSuccessful = true
             
             for (cmd, args, needsSudo) in commands {
                 let result = await SystemCommand.execute(command: cmd, arguments: args, requiresSudo: needsSudo)
@@ -90,14 +97,62 @@ public enum Dials {
                 if !result.output.isEmpty {
                     output += result.output + "\n"
                 }
+                if !result.success {
+                    allSuccessful = false
+                }
             }
             
             output += "\nCommand sequence completed."
+            
+            // Show notification based on the command type (only in GUI mode)
+            let success = allSuccessful
+            if NSApp != nil && NSApp.activationPolicy() != .prohibited {
+                await MainActor.run {
+                    if description.contains("AirPlay mirroring") {
+                        if success {
+                            showNotification(
+                                type: .success,
+                                title: "AirPlay Reset Complete",
+                                message: "AirPlay services have been restarted",
+                                secondaryMessage: "Now go to Control Center and stop mirroring manually",
+                                autoDismissAfter: 5.0
+                            )
+                        } else {
+                            showNotification(
+                                type: .error,
+                                title: "AirPlay Reset Failed",
+                                message: "Some commands failed to execute",
+                                secondaryMessage: "Check the output window for details",
+                                autoDismissAfter: 5.0
+                            )
+                        }
+                    } else if description.contains("Force stopping") {
+                        if success {
+                            showNotification(
+                                type: .success,
+                                title: "AirPlay Force Stop Complete",
+                                message: "All AirPlay processes terminated",
+                                secondaryMessage: "You may need to restart mirroring if desired",
+                                autoDismissAfter: 5.0
+                            )
+                        } else {
+                            showNotification(
+                                type: .error,
+                                title: "Force Stop Failed",
+                                message: "Some processes could not be terminated",
+                                secondaryMessage: "Check the output window for details",
+                                autoDismissAfter: 5.0
+                            )
+                        }
+                    }
+                }
+            }
+            
             return output
         }
     }
     
     /// Version and info
-    public static let version = "0.1.0"
+    public static let version = "0.2.0"
     public static let description = "A cockpit-style controller for macOS media I/O"
 }

@@ -1,18 +1,27 @@
 import ArgumentParser
 import SwiftUI
 import AppKit
+import AppIntents
 
 struct CommandCenter: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "Start Dials as a background menu bar app"
     )
     
+    // Store delegate as a static property to prevent deallocation
+    private static var appDelegate: MenuBarAppDelegate?
+    
     func run() throws {
+        // Create the application
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory) // No dock icon
         
+        // Create and store delegate with strong reference
         let delegate = MenuBarAppDelegate()
+        CommandCenter.appDelegate = delegate
         app.delegate = delegate
+        
+        // Run the application
         app.run()
     }
 }
@@ -20,9 +29,68 @@ struct CommandCenter: ParsableCommand {
 class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var commandCenterWindow: NSWindow?
+    var globalEventMonitor: Any?
+    var localEventMonitor: Any?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Register App Shortcuts
+        DialsShortcuts.updateAppShortcutParameters()
+        
         setupMenuBar()
+        setupGlobalHotkey()
+        
+        // Listen for show command center notifications
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(showCommandCenterFromNotification),
+            name: Notification.Name("com.arach.dials.showCommandCenter"),
+            object: nil
+        )
+        
+        // Check if we should show command center on launch
+        if ProcessInfo.processInfo.arguments.contains("--show-command-center") {
+            showCommandCenter()
+        }
+    }
+    
+    @objc func showCommandCenterFromNotification(_ notification: Notification) {
+        print("[DEBUG] Received show command center notification")
+        DispatchQueue.main.async { [weak self] in
+            print("[DEBUG] Calling showCommandCenter from notification")
+            self?.showCommandCenter()
+        }
+    }
+    
+    func setupGlobalHotkey() {
+        // Register global hotkey (Hyper+D)
+        globalEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            let hyperModifiers: NSEvent.ModifierFlags = [.shift, .option, .control, .command]
+            if event.modifierFlags.contains(hyperModifiers) && event.charactersIgnoringModifiers?.lowercased() == "d" {
+                DispatchQueue.main.async {
+                    if self?.commandCenterWindow?.isVisible == true {
+                        self?.commandCenterWindow?.close()
+                    } else {
+                        self?.showCommandCenter()
+                    }
+                }
+            }
+        }
+        
+        // Also add local monitor for when app is focused
+        localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            let hyperModifiers: NSEvent.ModifierFlags = [.shift, .option, .control, .command]
+            if event.modifierFlags.contains(hyperModifiers) && event.charactersIgnoringModifiers?.lowercased() == "d" {
+                if self?.commandCenterWindow?.isVisible == true {
+                    self?.commandCenterWindow?.close()
+                } else {
+                    self?.showCommandCenter()
+                }
+                return nil
+            }
+            return event
+        }
+        
+        print("[DEBUG] Global hotkey registered: Hyper+D (Shift+Option+Control+Command+D)")
     }
     
     func setupMenuBar() {
@@ -106,14 +174,32 @@ class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func showCommandCenter() {
-        if commandCenterWindow == nil {
-            createCommandCenterWindow()
+        print("[DEBUG] showCommandCenter called")
+        
+        // Temporarily change activation policy to show window
+        let currentPolicy = NSApp.activationPolicy()
+        if currentPolicy == .accessory {
+            NSApp.setActivationPolicy(.regular)
         }
+        
+        if commandCenterWindow == nil {
+            print("[DEBUG] Creating new command center window")
+            createCommandCenterWindow()
+        } else {
+            print("[DEBUG] Using existing command center window")
+        }
+        
         commandCenterWindow?.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
+        
+        // Don't restore activation policy immediately - let the window stay visible
+        // The policy will be restored when the window is closed
+        
+        print("[DEBUG] Window ordered front, app activated")
     }
     
     func createCommandCenterWindow() {
+        print("[DEBUG] createCommandCenterWindow called")
         let contentView = CommandCenterView { [weak self] in
             self?.commandCenterWindow?.close()
         }
@@ -160,8 +246,11 @@ class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     @objc func resetAirPlayMirror() {
         Task {
             let result = await Dials.Fixes.resetAirPlayMirror()
-            DispatchQueue.main.async {
-                showResultWindow(result)
+            // Only show result window if there's an error (notification handles success)
+            if result.contains("[✗]") {
+                await MainActor.run {
+                    showResultWindow(result)
+                }
             }
         }
     }
@@ -169,26 +258,61 @@ class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     @objc func forceStopAirPlay() {
         Task {
             let result = await Dials.Fixes.forceStopAirPlay()
-            DispatchQueue.main.async {
-                showResultWindow(result)
+            // Only show result window if there's an error (notification handles success)
+            if result.contains("[✗]") {
+                await MainActor.run {
+                    showResultWindow(result)
+                }
             }
         }
     }
     
     @objc func listOutputs() {
-        executeDirectCommand {
-            return try Dials.Audio.listOutputs()
+        Task {
+            do {
+                let output = try Dials.Audio.listOutputs()
+                await MainActor.run {
+                    showDeviceListWindow(title: "Audio Output Devices", output: output, type: .audio)
+                }
+            } catch {
+                await MainActor.run {
+                    showErrorAlert("Failed to list audio outputs: \(error.localizedDescription)")
+                }
+            }
         }
     }
     
     @objc func listDisplays() {
-        executeDirectCommand {
-            return Dials.Display.list()
+        Task {
+            let output = Dials.Display.list()
+            await MainActor.run {
+                showDeviceListWindow(title: "Connected Displays", output: output, type: .display)
+            }
         }
     }
     
     @objc func quit() {
         NSApplication.shared.terminate(nil)
+    }
+    
+    func applicationWillTerminate(_ notification: Notification) {
+        // Clean up event monitors
+        if let monitor = globalEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalEventMonitor = nil
+        }
+        if let monitor = localEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            localEventMonitor = nil
+        }
+        // Clean up status item
+        if let item = statusItem {
+            NSStatusBar.system.removeStatusItem(item)
+            statusItem = nil
+        }
+        // Clean up command center window
+        commandCenterWindow?.close()
+        commandCenterWindow = nil
     }
 }
 
@@ -196,18 +320,22 @@ class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
 extension MenuBarAppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         commandCenterWindow = nil
+        // Restore accessory activation policy when window closes
+        NSApp.setActivationPolicy(.accessory)
     }
     
     // Helper function to execute commands directly
     func executeDirectCommand(_ action: @escaping () throws -> String) {
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 let result = try action()
                 DispatchQueue.main.async {
+                    guard self != nil else { return }
                     showResultWindow(result)
                 }
             } catch {
                 DispatchQueue.main.async {
+                    guard self != nil else { return }
                     showErrorAlert("Error: \(error.localizedDescription)")
                 }
             }
@@ -234,8 +362,17 @@ struct CommandCenterView: View {
             title: "Output List",
             description: "List audio devices",
             action: { 
-                executeDirectAction {
-                    return try Dials.Audio.listOutputs()
+                Task {
+                    do {
+                        let output = try Dials.Audio.listOutputs()
+                        await MainActor.run {
+                            showDeviceListWindow(title: "Audio Output Devices", output: output, type: .audio)
+                        }
+                    } catch {
+                        await MainActor.run {
+                            showErrorAlert("Failed to list audio outputs: \(error.localizedDescription)")
+                        }
+                    }
                 }
             }
         ),
@@ -254,8 +391,11 @@ struct CommandCenterView: View {
             title: "Display List",
             description: "List all displays",
             action: { 
-                executeDirectAction {
-                    return Dials.Display.list()
+                Task {
+                    let output = Dials.Display.list()
+                    await MainActor.run {
+                        showDeviceListWindow(title: "Connected Displays", output: output, type: .display)
+                    }
                 }
             }
         ),
@@ -285,8 +425,11 @@ struct CommandCenterView: View {
             action: { 
                 Task {
                     let result = await Dials.Fixes.resetAirPlayMirror()
-                    await MainActor.run {
-                        showResultWindow(result)
+                    // Only show result window if there's an error (notification handles success)
+                    if result.contains("[✗]") {
+                        await MainActor.run {
+                            showResultWindow(result)
+                        }
                     }
                 }
             }
@@ -298,8 +441,11 @@ struct CommandCenterView: View {
             action: { 
                 Task {
                     let result = await Dials.Fixes.forceStopAirPlay()
-                    await MainActor.run {
-                        showResultWindow(result)
+                    // Only show result window if there's an error (notification handles success)
+                    if result.contains("[✗]") {
+                        await MainActor.run {
+                            showResultWindow(result)
+                        }
                     }
                 }
             }
