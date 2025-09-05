@@ -6,7 +6,7 @@ import ArgumentParser
 struct DialsCLI: ParsableCommand {
     static var configuration = CommandConfiguration(
         abstract: "A cockpit-style controller for macOS media I/O.",
-        version: "0.2.0",
+        version: "0.2.1",
         subcommands: [
             Balance.self,
             Output.self,

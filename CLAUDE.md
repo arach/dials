@@ -66,7 +66,7 @@ swift run dials --help        # Run CLI directly
 #### 1. Entry Point (`Sources/main.swift`)
 - Root `DialsCLI` command using Swift ArgumentParser
 - Registers all subcommands and sets `CommandCenter` as default
-- Version: 0.2.0
+- Version: 0.2.1
 
 #### 2. Dials SDK (`Sources/Services/Dials.swift`)
 Central API providing three modules:

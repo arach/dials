@@ -4,7 +4,7 @@
 # Project Configuration
 APP_NAME = Dials
 BINARY_NAME = dials
-VERSION = 0.2.0
+VERSION = 0.2.1
 BUNDLE_ID = com.arach.dials
 
 # Build Configuration

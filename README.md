@@ -1,6 +1,6 @@
 # Dials
 
-**Version 0.2.0** - A cockpit-style controller for macOS system settings.
+**Version 0.2.1** - A cockpit-style controller for macOS system settings.
 
 Dials provides intuitive control over macOS media I/O with both a powerful menu bar app and command-line interface. Control audio balance, manage displays, fix AirPlay issues, and more - all from your menu bar or terminal.
 
@@ -198,7 +198,7 @@ Dials/
 
 ## Roadmap
 
-### Current (v0.2.0)
+### Current (v0.2.1)
 - ✅ Menu bar app with Command Center UI
 - ✅ App Intents for Siri/Shortcuts
 - ✅ Global hotkey (Hyper+D)

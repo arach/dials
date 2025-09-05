@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 APP_NAME="Dials"
-VERSION="0.1.0"
+VERSION="0.2.1"
 DMG_NAME="Dials-${VERSION}"
 BUILD_DIR="dmg-build"
 BACKGROUND_COLOR="#2C3E50"

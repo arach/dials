@@ -153,6 +153,6 @@ public enum Dials {
     }
     
     /// Version and info
-    public static let version = "0.2.0"
+    public static let version = "0.2.1"
     public static let description = "A cockpit-style controller for macOS media I/O"
 }

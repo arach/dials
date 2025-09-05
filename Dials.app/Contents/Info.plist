@@ -15,9 +15,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.2.1</string>
 	<key>CFBundleVersion</key>
-	<string>0.1.0</string>
+	<string>0.2.1</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>LSUIElement</key>
@@ -28,5 +28,15 @@
 	<string>Dials needs access to audio devices to control balance and output settings.</string>
 	<key>NSSystemAdministrationUsageDescription</key>
 	<string>Dials needs administrator privileges to control system audio settings.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Dials needs accessibility access to register global keyboard shortcuts.</string>
+	<key>INIntentsSupported</key>
+	<array>
+		<string>SetBalanceIntent</string>
+		<string>BalanceLeftIntent</string>
+		<string>BalanceCenterIntent</string>
+		<string>BalanceRightIntent</string>
+		<string>GetBalanceIntent</string>
+	</array>
 </dict>
 </plist>
