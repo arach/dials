@@ -130,9 +130,6 @@ fi
 echo "✅ CLI installed successfully!"
 echo ""
 echo "You can now use: dials --help"
-echo ""
-echo "Press any key to close..."
-read -n 1
 EOF
 
 chmod +x "$BUILD_DIR/Install CLI.command"

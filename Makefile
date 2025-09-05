@@ -283,20 +283,20 @@ show: debug
 
 # Audio balance controls
 balance-left: debug
-	@$(DEBUG_BINARY) balance --left
+	@$(DEBUG_BINARY) balance --left > /dev/null 2>&1
 
 balance-center: debug
-	@$(DEBUG_BINARY) balance --center
+	@$(DEBUG_BINARY) balance --center > /dev/null 2>&1
 
 balance-right: debug
-	@$(DEBUG_BINARY) balance --right
+	@$(DEBUG_BINARY) balance --right > /dev/null 2>&1
 
 # Device listings
 list-outputs: debug
-	@$(DEBUG_BINARY) output list
+	@$(DEBUG_BINARY) output list > /dev/null 2>&1
 
 list-displays: debug
-	@$(DEBUG_BINARY) display list
+	@$(DEBUG_BINARY) display list > /dev/null 2>&1
 
 # === HELP TARGET ===
 
