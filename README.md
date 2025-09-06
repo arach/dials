@@ -127,10 +127,12 @@ make dmg           # Create DMG installer
 make install-app   # Install to /Applications
 make install       # Install CLI to /usr/local/bin
 
-# Quick commands (with auto-build)
+# Quick commands (with auto-build, silent execution)
 make command-center    # Launch menu bar app
-make balance-left      # Pan audio left
-make list-outputs      # Show audio devices
+make balance-left      # Pan audio left (no terminal window)
+make balance-center    # Center audio balance (silent)
+make balance-right     # Pan audio right (silent)
+make list-outputs      # Show audio devices (silent)
 make help             # Show all commands
 ```
 
@@ -196,6 +198,22 @@ Dials/
 
 ---
 
+## Changelog
+
+### v0.2.1 (Latest)
+- 🔇 **Terminal Improvements** - Makefile quick commands now execute silently without leaving empty terminal windows
+- 🖥️ **DMG Installer Enhancement** - Removed confirmation prompt from CLI installer for seamless installation
+- 🛠️ **Build System** - Enhanced output suppression for better developer experience
+
+### v0.2.0
+- 🎵 Complete audio balance control implementation
+- 📱 Full-featured menu bar app with Command Center UI
+- 🚀 Global hotkey support (Hyper+D)
+- 🗣️ Siri and Shortcuts integration via App Intents
+- 📦 DMG distribution with drag-and-drop installation
+
+---
+
 ## Roadmap
 
 ### Current (v0.2.1)
@@ -206,6 +224,8 @@ Dials/
 - ✅ System fixes for AirPlay issues
 - ✅ Visual balance dial display
 - ✅ DMG distribution
+- ✅ Silent terminal execution for quick commands
+- ✅ Seamless DMG installer (no prompts)
 
 ### Next Release (v0.3.0)
 - [ ] Audio device switching and routing
